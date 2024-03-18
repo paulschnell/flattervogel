@@ -20,6 +20,7 @@ i32 Application::run() noexcept {
 }
 
 void Application::onInit() {
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
@@ -34,8 +35,45 @@ void Application::onInit() {
 }
 
 void Application::onUpdate(f64 deltaTime) {
+    // Don't Ask Why Just Press Enter
+    if (IsKeyPressed(KEY_ENTER)) {
+        m_supersecretmode = !m_supersecretmode;
+        if (d != m_game.gameScreen().left / 2.0) {
+            m_game.gameScreen().left = GetScreenWidth() / 2 - m_game.gameScreen().right / 2;
+        }
+        d = m_game.gameScreen().left / 2.0;
+        e = 1.0;
+    }
+    if (m_supersecretmode) {
+        d += e * f;
+        m_game.gameScreen().left = d;
+        if (m_game.gameScreen().left + m_game.gameScreen().right >= GetScreenWidth()) {
+            e = -1.0;
+        } else if (m_game.gameScreen().left <= 0) {
+            e = 1.0;
+        }
+
+        if (IsKeyDown(KEY_UP)) {
+            f += IsKeyDown(KEY_LEFT_SHIFT) ? 1 : 0.5;
+        }
+        if (IsKeyDown(KEY_DOWN)) {
+            f -= IsKeyDown(KEY_LEFT_SHIFT) ? 1 : 0.5;
+        }
+    }
+
     // Update
     m_game.onUpdate(deltaTime);
+
+    if (IsWindowResized()) {
+        i32 gameScreenHeight = GetScreenHeight();
+        i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
+        m_game.gameScreen() = {
+            GetScreenWidth() / 2 - gameScreenWidth / 2,
+            0,
+            gameScreenWidth,
+            gameScreenHeight,
+        };
+    }
 
     if (IsKeyPressed(KEY_SPACE)) {
         if (m_game.gameOver()) {
@@ -45,56 +83,21 @@ void Application::onUpdate(f64 deltaTime) {
         }
     }
 
-    #ifdef PS_DEBUG
+#ifdef PS_DEBUG
     if (IsKeyPressed(KEY_F1)) {
         m_game.toggleDebugPause();
     }
     if (IsKeyPressed(KEY_F2)) {
         m_game.toggleRenderCollisionInfo();
     }
-    #endif
+#endif
 
     // Draw
     BeginDrawing();
 
-    ClearBackground(RAYWHITE);
+    ClearBackground(DARKGRAY);
 
     m_game.onRender();
-
-    DrawRectangle(0, 0, m_game.gameScreen().left, SCREEN_HEIGHT, RAYWHITE);
-    DrawRectangle(
-        m_game.gameScreen().left + m_game.gameScreen().right,
-        0,
-        SCREEN_WIDTH - m_game.gameScreen().right - m_game.gameScreen().left,
-        SCREEN_HEIGHT,
-        RAYWHITE);
-
-#ifdef PS_DEBUG 
-    DrawRectangle(
-        m_game.gameScreen().left + m_game.gameScreen().right,
-        0,
-        20,
-        m_game.gameScreen().bottom / 4,
-        BLACK);
-    DrawRectangle(
-        m_game.gameScreen().left + m_game.gameScreen().right,
-        m_game.gameScreen().bottom / 4,
-        20,
-        m_game.gameScreen().bottom / 4,
-        YELLOW);
-    DrawRectangle(
-        m_game.gameScreen().left + m_game.gameScreen().right,
-        2 * m_game.gameScreen().bottom / 4,
-        20,
-        m_game.gameScreen().bottom / 4,
-        BLACK);
-    DrawRectangle(
-        m_game.gameScreen().left + m_game.gameScreen().right,
-        3 * m_game.gameScreen().bottom / 4,
-        20,
-        m_game.gameScreen().bottom / 4,
-        YELLOW);
-#endif
 
     EndDrawing();
 

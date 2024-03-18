@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include <cmath>
+#include <format>
 
 Game::Game()
     : m_gameScreen({}) {
@@ -19,7 +20,7 @@ void Game::onUpdate(f64 deltaTime) {
 #endif
 
         if (collided()) {
-            m_gameOver = TRUE;
+            onGameOver();
         }
 
         if (!m_gameOver) {
@@ -43,6 +44,29 @@ void Game::onRender() {
     m_pipe1.draw(m_gameScreen);
 
     m_bird.draw(m_gameScreen);
+
+    // Clear left and right side of screen
+    DrawRectangle(0, 0, m_gameScreen.left, GetScreenHeight(), RAYWHITE);
+    DrawRectangle(
+        m_gameScreen.left +m_gameScreen.right,
+        0,
+        GetScreenWidth() - m_gameScreen.right - m_gameScreen.left,
+        GetScreenHeight(),
+        RAYWHITE);
+
+    // Draw Score
+    DrawText(
+        std::format("Score: {}", m_score).c_str(),
+        m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
+        m_gameScreen.top + 0.01 * GetScreenWidth(),
+        0.075 * GetScreenHeight(),
+        LIGHTGRAY);
+    DrawText(
+        std::format("Highscore: {}", m_highScore).c_str(),
+        m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
+        m_gameScreen.top + 0.075 * GetScreenHeight() + 0.01 * GetScreenHeight(),
+        0.075 * GetScreenHeight(),
+        LIGHTGRAY);
 
 #ifdef PS_DEBUG
     if (m_renderCollisionInfo) {
@@ -96,6 +120,32 @@ void Game::onRender() {
             m_gameScreen.left + Bird::X_OFFSET * m_gameScreen.right,
             m_gameScreen.top + m_gameScreen.bottom,
             ORANGE);
+
+        // Height
+        DrawRectangle(
+            m_gameScreen.left + m_gameScreen.right,
+            0,
+            10,
+            m_gameScreen.bottom / 4,
+            BLACK);
+        DrawRectangle(
+            m_gameScreen.left + m_gameScreen.right,
+            m_gameScreen.bottom / 4,
+            10,
+            m_gameScreen.bottom / 4,
+            YELLOW);
+        DrawRectangle(
+            m_gameScreen.left + m_gameScreen.right,
+            2 * m_gameScreen.bottom / 4,
+            10,
+            m_gameScreen.bottom / 4,
+            BLACK);
+        DrawRectangle(
+            m_gameScreen.left + m_gameScreen.right,
+            3 * m_gameScreen.bottom / 4,
+            10,
+            m_gameScreen.bottom / 4,
+            YELLOW);
     }
 #endif
 }
@@ -106,9 +156,11 @@ void Game::birdJump() {
 
 void Game::reset() {
     m_gameOver = FALSE;
+    m_score = 0;
     m_bird = Bird();
     m_pipe0 = Pipe();
     m_pipe1 = Pipe(1.6);
+    m_pNearestPipe = &m_pipe0;
 
     onInit();
 }
@@ -118,15 +170,30 @@ void Game::onInit() {
     m_pipe1.randomHoleY();
 }
 
+void Game::onGameOver() {
+    m_gameOver = TRUE;
+    if (m_score > m_highScore) {
+        m_highScore = m_score;
+    }
+}
+
 bool Game::collided() {
     if (m_bird.getY() <= 0.0 + Bird::RADIUS) {
         return TRUE;
     }
 
-    Pipe& nearestPipe = m_pipe0.getLeftX() > 0.5 ? m_pipe1 : m_pipe0;
+    // switch to nearest pipe (if last ist cleared)
+    if (m_pNearestPipe->getLeftX() + Pipe::WIDTH < Bird::X_OFFSET - Bird::RADIUS) {
+        if (m_pNearestPipe == &m_pipe0)
+            m_pNearestPipe = &m_pipe1;
+        else
+            m_pNearestPipe = &m_pipe0;
+
+        m_score += 1;
+    }
 
     // going above screen:
-    if (m_bird.getY() > 1.0 && nearestPipe.getLeftX() <= Bird::X_OFFSET + Bird::RADIUS) {
+    if (m_bird.getY() > 1.0 && m_pNearestPipe->getLeftX() <= Bird::X_OFFSET + Bird::RADIUS) {
         return TRUE;
     }
 
@@ -134,34 +201,35 @@ bool Game::collided() {
         Bird::X_OFFSET,
         m_bird.getY()
     };
-    f64 birdR = Bird::RADIUS;
 
     // Top
     Vec topPipe = {
-        nearestPipe.getLeftX(),
+        m_pNearestPipe->getLeftX(),
         1.0
     };
     Vec topPipeDim = {
         Pipe::WIDTH,
-        1.0 - nearestPipe.getHoleY() - Pipe::HOLE_HEIGHT / 2.0
+        1.0 - m_pNearestPipe->getHoleY() - Pipe::HOLE_HEIGHT / 2.0
     };
 
     // Bottom
     Vec botPipe = {
-        nearestPipe.getLeftX(),
-        nearestPipe.getHoleY() - Pipe::HOLE_HEIGHT / 2.0
+        m_pNearestPipe->getLeftX(),
+        m_pNearestPipe->getHoleY() - Pipe::HOLE_HEIGHT / 2.0
     };
     Vec botPipeDim = {
         Pipe::WIDTH,
-        nearestPipe.getHoleY() - Pipe::HOLE_HEIGHT / 2.0
+        m_pNearestPipe->getHoleY() - Pipe::HOLE_HEIGHT / 2.0
     };
 
 #ifdef PS_DEBUG
-    m_debugInfoData.topPipe = { topPipe.x, topPipe.y, topPipeDim.x, topPipeDim.y };
-    m_debugInfoData.botPipe = { botPipe.x, botPipe.y, botPipeDim.x, botPipeDim.y };
+    if (m_renderCollisionInfo) {
+        m_debugInfoData.topPipe = { topPipe.x, topPipe.y, topPipeDim.x, topPipeDim.y };
+        m_debugInfoData.botPipe = { botPipe.x, botPipe.y, botPipeDim.x, botPipeDim.y };
+    }
 #endif
 
-    return circleRectCollision(bird, birdR, topPipe, topPipeDim) || circleRectCollision(bird, birdR, botPipe, botPipeDim);
+    return circleRectCollision(bird, Bird::RADIUS, topPipe, topPipeDim) || circleRectCollision(bird, Bird::RADIUS, botPipe, botPipeDim);
 }
 
 bool Game::circleRectCollision(Vec circlePos, f64 circleR, Vec rectPos, Vec rectDim) {

@@ -3,7 +3,7 @@
 #include "defines.hpp"
 #include "game/game.hpp"
 
-constexpr const i32 SCREEN_WIDTH = 750 * 4 / 3;
+constexpr const i32 SCREEN_WIDTH = 750 * 16 / 9;
 constexpr const i32 SCREEN_HEIGHT = 750;
 constexpr const f32 GAME_ASPECT_RATIO = 0.75;
 
@@ -25,4 +25,9 @@ private:
     bool m_isRunning = TRUE;
 
     Game m_game;
+
+    bool m_supersecretmode = FALSE;
+    f64 f = 10.0;
+    f64 d = 0.0;
+    f64 e = 0.0;
 };
