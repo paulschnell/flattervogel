@@ -7,8 +7,6 @@
 Pipe::Pipe(f64 spawnX)
     : m_leftX(spawnX) {}
 
-Pipe::Pipe() {}
-
 void Pipe::move(f64 deltaTime) {
     m_leftX -= SPEED * deltaTime;
 
@@ -25,7 +23,7 @@ void Pipe::randomHoleY() {
     m_holeY = dist(rng);
 }
 
-void Pipe::draw(const utils::Rect<i32>& gameScreen) {
+void Pipe::draw(const utils::Rect<i32>& gameScreen) const {
     // Lower
     DrawRectangle(
         gameScreen.left + m_leftX * gameScreen.right,

@@ -2,8 +2,6 @@
 
 #include "raylib.h"
 
-Bird::Bird() {}
-
 void Bird::move(f64 deltaTime) {
     m_lastJump += deltaTime;
     if (m_lastJump > 0.5)
@@ -15,7 +13,7 @@ void Bird::jump() {
     m_lastJump = -0.5;
 }
 
-f64 Bird::speed() {
+f64 Bird::speed() const {
     // out < 0 -> down
     // out > 0 -> up
 
@@ -26,7 +24,7 @@ f64 Bird::speed() {
     return out;
 }
 
-void Bird::draw(const utils::Rect<i32>& gameScreen) {
+void Bird::draw(const utils::Rect<i32>& gameScreen) const {
     DrawCircle(
         gameScreen.left + X_OFFSET * gameScreen.right,
         gameScreen.top + (1.0 - m_birdY) * gameScreen.bottom,

@@ -35,32 +35,6 @@ void Application::onInit() {
 }
 
 void Application::onUpdate(f64 deltaTime) {
-    // Don't Ask Why Just Press Enter
-    if (IsKeyPressed(KEY_ENTER)) {
-        m_supersecretmode = !m_supersecretmode;
-        if (d != m_game.gameScreen().left / 2.0) {
-            m_game.gameScreen().left = GetScreenWidth() / 2 - m_game.gameScreen().right / 2;
-        }
-        d = m_game.gameScreen().left / 2.0;
-        e = 1.0;
-    }
-    if (m_supersecretmode) {
-        d += e * f;
-        m_game.gameScreen().left = d;
-        if (m_game.gameScreen().left + m_game.gameScreen().right >= GetScreenWidth()) {
-            e = -1.0;
-        } else if (m_game.gameScreen().left <= 0) {
-            e = 1.0;
-        }
-
-        if (IsKeyDown(KEY_UP)) {
-            f += IsKeyDown(KEY_LEFT_SHIFT) ? 1 : 0.5;
-        }
-        if (IsKeyDown(KEY_DOWN)) {
-            f -= IsKeyDown(KEY_LEFT_SHIFT) ? 1 : 0.5;
-        }
-    }
-
     // Update
     m_game.onUpdate(deltaTime);
 
@@ -82,15 +56,6 @@ void Application::onUpdate(f64 deltaTime) {
             m_game.birdJump();
         }
     }
-
-#ifdef PS_DEBUG
-    if (IsKeyPressed(KEY_F1)) {
-        m_game.toggleDebugPause();
-    }
-    if (IsKeyPressed(KEY_F2)) {
-        m_game.toggleRenderCollisionInfo();
-    }
-#endif
 
     // Draw
     BeginDrawing();

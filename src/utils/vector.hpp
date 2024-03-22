@@ -2,6 +2,8 @@
 
 #include "defines.hpp"
 
+namespace utils {
+
 template<typename T, usize N>
 class Vector {
 public:
@@ -11,12 +13,12 @@ public:
         }
     }
 
-    Vector(T* data) {
+    explicit Vector(T* data) {
         memcpy(m_data, data, N * sizeof(T));
     }
 
     template<typename... Args>
-    Vector(Args... args) {
+    explicit Vector(Args... args) {
         m_data = { static_cast<T>(args)... };
         static_assert(sizeof...(args) == N, "Incorrent  number of arguments provided.");
     }
@@ -44,3 +46,5 @@ public:
 private:
     T m_data[N];
 };
+
+} // namespace utils

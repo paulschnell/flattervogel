@@ -15,26 +15,18 @@ Game::Game(utils::Rect<i32> gameScreen)
 }
 
 void Game::onUpdate(f64 deltaTime) {
-#ifdef PS_DEBUG
-    if (!m_debugPause) {
-#endif
-
-        if (collided()) {
-            onGameOver();
-        }
-
-        if (!m_gameOver) {
-            m_bird.move(deltaTime);
-
-            m_pipe0.move(deltaTime);
-            m_pipe1.move(deltaTime);
-        } else {
-            m_bird.freefall(deltaTime);
-        }
-
-#ifdef PS_DEBUG
+    if (collided()) {
+        onGameOver();
     }
-#endif
+
+    if (!m_gameOver) {
+        m_bird.move(deltaTime);
+
+        m_pipe0.move(deltaTime);
+        m_pipe1.move(deltaTime);
+    } else {
+        m_bird.freefall(deltaTime);
+    }
 }
 
 void Game::onRender() {
@@ -48,7 +40,7 @@ void Game::onRender() {
     // Clear left and right side of screen
     DrawRectangle(0, 0, m_gameScreen.left, GetScreenHeight(), RAYWHITE);
     DrawRectangle(
-        m_gameScreen.left +m_gameScreen.right,
+        m_gameScreen.left + m_gameScreen.right,
         0,
         GetScreenWidth() - m_gameScreen.right - m_gameScreen.left,
         GetScreenHeight(),
@@ -67,87 +59,6 @@ void Game::onRender() {
         m_gameScreen.top + 0.075 * GetScreenHeight() + 0.01 * GetScreenHeight(),
         0.075 * GetScreenHeight(),
         LIGHTGRAY);
-
-#ifdef PS_DEBUG
-    if (m_renderCollisionInfo) {
-        // Pipe
-        DrawRectangleLines(
-            m_gameScreen.left + m_debugInfoData.topPipe.left * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.topPipe.top) * m_gameScreen.bottom,
-            m_debugInfoData.topPipe.right * m_gameScreen.right,
-            m_debugInfoData.topPipe.bottom * m_gameScreen.bottom,
-            MAGENTA);
-
-        DrawRectangleLines(
-            m_gameScreen.left + m_debugInfoData.botPipe.left * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.botPipe.top) * m_gameScreen.bottom,
-            m_debugInfoData.botPipe.right * m_gameScreen.right,
-            m_debugInfoData.botPipe.bottom * m_gameScreen.bottom,
-            MAGENTA);
-
-        // Nearest Point
-        DrawCircle(
-            m_gameScreen.left + m_debugInfoData.topNearestPoint.x * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.topNearestPoint.y) * m_gameScreen.bottom,
-            5,
-            ORANGE);
-
-        DrawCircle(
-            m_gameScreen.left + m_debugInfoData.botNearestPoint.x * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.botNearestPoint.y) * m_gameScreen.bottom,
-            5,
-            ORANGE);
-
-        // Distance to Nearest Point
-        DrawLine(
-            m_gameScreen.left + Bird::X_OFFSET * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_bird.getY()) * m_gameScreen.bottom,
-            m_gameScreen.left + m_debugInfoData.topNearestPoint.x * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.topNearestPoint.y) * m_gameScreen.bottom,
-            ORANGE);
-
-        DrawLine(
-            m_gameScreen.left + Bird::X_OFFSET * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_bird.getY()) * m_gameScreen.bottom,
-            m_gameScreen.left + m_debugInfoData.botNearestPoint.x * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_debugInfoData.botNearestPoint.y) * m_gameScreen.bottom,
-            ORANGE);
-
-        // Distance to Ground
-        DrawLine(
-            m_gameScreen.left + Bird::X_OFFSET * m_gameScreen.right,
-            m_gameScreen.top + (1.0 - m_bird.getY()) * m_gameScreen.bottom,
-            m_gameScreen.left + Bird::X_OFFSET * m_gameScreen.right,
-            m_gameScreen.top + m_gameScreen.bottom,
-            ORANGE);
-
-        // Height
-        DrawRectangle(
-            m_gameScreen.left + m_gameScreen.right,
-            0,
-            10,
-            m_gameScreen.bottom / 4,
-            BLACK);
-        DrawRectangle(
-            m_gameScreen.left + m_gameScreen.right,
-            m_gameScreen.bottom / 4,
-            10,
-            m_gameScreen.bottom / 4,
-            YELLOW);
-        DrawRectangle(
-            m_gameScreen.left + m_gameScreen.right,
-            2 * m_gameScreen.bottom / 4,
-            10,
-            m_gameScreen.bottom / 4,
-            BLACK);
-        DrawRectangle(
-            m_gameScreen.left + m_gameScreen.right,
-            3 * m_gameScreen.bottom / 4,
-            10,
-            m_gameScreen.bottom / 4,
-            YELLOW);
-    }
-#endif
 }
 
 void Game::birdJump() {
@@ -222,13 +133,6 @@ bool Game::collided() {
         m_pNearestPipe->getHoleY() - Pipe::HOLE_HEIGHT / 2.0
     };
 
-#ifdef PS_DEBUG
-    if (m_renderCollisionInfo) {
-        m_debugInfoData.topPipe = { topPipe.x, topPipe.y, topPipeDim.x, topPipeDim.y };
-        m_debugInfoData.botPipe = { botPipe.x, botPipe.y, botPipeDim.x, botPipeDim.y };
-    }
-#endif
-
     return circleRectCollision(bird, Bird::RADIUS, topPipe, topPipeDim) || circleRectCollision(bird, Bird::RADIUS, botPipe, botPipeDim);
 }
 
@@ -244,16 +148,6 @@ bool Game::circleRectCollision(Vec circlePos, f64 circleR, Vec rectPos, Vec rect
         nearest.y = rectPos.y;
     else if (rectPos.y - rectDim.y > circlePos.y)
         nearest.y = rectPos.y - rectDim.y;
-
-#ifdef PS_DEBUG
-    if (!m_debugInfoData.topNearestPointSet) {
-        m_debugInfoData.topNearestPoint = nearest;
-        m_debugInfoData.topNearestPointSet = TRUE;
-    } else {
-        m_debugInfoData.botNearestPoint = nearest;
-        m_debugInfoData.topNearestPointSet = FALSE;
-    }
-#endif
 
     f64 dist = std::sqrt(std::pow(nearest.x - circlePos.x, 2) + std::pow(nearest.y - circlePos.y, 2));
 

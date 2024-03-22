@@ -9,18 +9,18 @@ public:
     static constexpr const f64 X_OFFSET = 1.0 / 3.0;
 
 public:
-    Bird();
+    Bird() = default;
     ~Bird() = default;
 
     void move(f64 deltaTime);
     void jump();
-    void draw(const utils::Rect<i32>& gameScreen);
+    void draw(const utils::Rect<i32>& gameScreen) const;
     void freefall(f64 deltaTime);
 
     inline f64 getY() const noexcept { return m_birdY; }
 
 private:
-    f64 speed();
+    f64 speed() const;
 
 private:
     f64 m_birdY = 0.5; // 0.0 < birdY < 1.0

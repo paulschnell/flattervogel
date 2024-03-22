@@ -25,9 +25,4 @@ private:
     bool m_isRunning = TRUE;
 
     Game m_game;
-
-    bool m_supersecretmode = FALSE;
-    f64 f = 10.0;
-    f64 d = 0.0;
-    f64 e = 0.0;
 };
