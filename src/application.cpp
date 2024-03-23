@@ -50,11 +50,7 @@ void Application::onUpdate(f64 deltaTime) {
     }
 
     if (IsKeyPressed(KEY_SPACE)) {
-        if (m_game.gameOver()) {
-            m_game.reset();
-        } else {
-            m_game.birdJump();
-        }
+
     }
 
     // Draw
