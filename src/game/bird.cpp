@@ -3,26 +3,44 @@
 #include "raylib.h"
 #include "pipe.hpp"
 #include <cmath>
+#include <random>
+#include <iostream>
+
+Bird::Bird(const NeuralNetwork& brain)
+    : m_brain(brain) {
+}
 
 void Bird::move(f64 deltaTime, const Pipe* pNearestPipe) {
+    if (m_dead) {
+        m_x -= deltaTime * Pipe::SPEED;
+        freefall(deltaTime);
+        return;
+    }
+
     m_lastJump += deltaTime;
     if (m_lastJump > 0.5)
         m_lastJump = 0.5;
     m_y += speed();
 
-    if (m_dead) {
-        m_x -= deltaTime * Pipe::SPEED;
-
-        if (m_y < 7.0 * RADIUS / 10.0) {
-            m_y = 7.0 * RADIUS / 10.0;
-        }
-    } else if (hasCollided(pNearestPipe)) {
+    if (hasCollided(pNearestPipe)) {
+        m_deadY = m_y;
         m_dead = TRUE;
+    } else {
+        m_survivedTime += deltaTime;
     }
 }
 
 void Bird::jump() {
     m_lastJump = -0.5;
+}
+
+void Bird::freefall(f64 deltaTime) {
+    m_lastJump += deltaTime;
+    m_y += speed();
+
+    if (m_y < 7.0 * RADIUS / 10.0) {
+        m_y = 7.0 * RADIUS / 10.0;
+    }
 }
 
 void Bird::draw(const utils::Rect<i32>& gameScreen) const {
@@ -35,6 +53,14 @@ void Bird::draw(const utils::Rect<i32>& gameScreen) const {
 
 void Bird::incrScore() noexcept {
     m_score++;
+}
+
+void Bird::think(f64 holeY) {
+    std::vector<f64> input = { m_y, holeY };
+    f64 out = m_brain.calc(input)[0];
+    if (out > 0.5) {
+        jump();
+    }
 }
 
 f64 Bird::speed() const {
@@ -104,3 +130,21 @@ bool Bird::circleRectCollision(Vec circlePos, f64 circleR, Vec rectPos, Vec rect
     // 0.01 for "smoother user experience"
     return dist + 0.01 < circleR;
 }
+
+// ---------------------------------- AI stuff ----------------------------------
+f64 Bird::fitness() const noexcept {
+    return (f64) (m_survivedTime);
+}
+
+void Bird::createRandomNeuralNetwork() {
+/*    std::random_device dev;
+    std::mt19937 rng(dev());
+
+    std::uniform_real_distribution distNeurons0(1.0, 4.0);
+    std::uniform_real_distribution distNeurons1(2.0, 4.0);
+
+    m_brain.addLayer(std::round(distNeurons0(rng)), 2);
+    m_brain.addLayer(std::round(distNeurons1(rng)));*/
+    m_brain.addLayer(1, 2);
+}
+// ---------------------------------- AI stuff ----------------------------------

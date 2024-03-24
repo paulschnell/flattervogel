@@ -24,9 +24,11 @@ void Application::onInit() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
+    m_pGame = new Game(10);
+
     i32 gameScreenHeight = SCREEN_HEIGHT;
     i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
-    m_game.gameScreen() = {
+    m_pGame->gameScreen() = {
         SCREEN_WIDTH / 2 - gameScreenWidth / 2,
         0,
         gameScreenWidth,
@@ -36,12 +38,12 @@ void Application::onInit() {
 
 void Application::onUpdate(f64 deltaTime) {
     // Update
-    m_game.onUpdate(deltaTime);
+    m_pGame->onUpdate(deltaTime);
 
     if (IsWindowResized()) {
         i32 gameScreenHeight = GetScreenHeight();
         i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
-        m_game.gameScreen() = {
+        m_pGame->gameScreen() = {
             GetScreenWidth() / 2 - gameScreenWidth / 2,
             0,
             gameScreenWidth,
@@ -58,7 +60,7 @@ void Application::onUpdate(f64 deltaTime) {
 
     ClearBackground(DARKGRAY);
 
-    m_game.onRender();
+    m_pGame->onRender();
 
     EndDrawing();
 
@@ -67,4 +69,6 @@ void Application::onUpdate(f64 deltaTime) {
 
 void Application::onDestroy() {
     CloseWindow();
+
+    delete m_pGame;
 }

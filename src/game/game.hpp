@@ -8,16 +8,19 @@
 
 class Game {
 public:
-    Game();
-    Game(utils::Rect<i32> gameScreen);
+    Game(u64 populationSize);
+    Game(utils::Rect<i32> gameScreen, u64 populationSize);
     ~Game() = default;
 
     void onUpdate(f64 deltaTime);
     void onRender();
-    void birdJump();
     void reset();
 
     inline utils::Rect<i32>& gameScreen() noexcept { return m_gameScreen; }
+
+    // ---------------------------------- AI stuff ----------------------------------
+    void newGeneration();
+    // ---------------------------------- AI stuff ----------------------------------
 
 private:
     void onInit();
@@ -25,8 +28,11 @@ private:
 private:
     utils::Rect<i32> m_gameScreen;
     u64 m_bestScore = 0;
+    bool m_paused = FALSE;
 
-    std::vector<Bird> m_birds;
+    u64 m_generationCounter = 1;
+    u64 m_populationSize;
+    std::vector<Bird> m_birds; // Population
 
     Pipe m_pipe0;
     Pipe m_pipe1 = Pipe(1.6);
