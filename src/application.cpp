@@ -24,12 +24,12 @@ void Application::onInit() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
-    m_pGame = new Game(1000);
+    m_pGame = new Game(10000);
 
     i32 gameScreenHeight = SCREEN_HEIGHT;
     i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
     m_pGame->gameScreen() = {
-        SCREEN_WIDTH / 2 - gameScreenWidth / 2,
+        0 /*GetScreenWidth() / 2 - gameScreenWidth / 2*/,
         0,
         gameScreenWidth,
         gameScreenHeight,
@@ -44,7 +44,7 @@ void Application::onUpdate(f64 deltaTime) {
         i32 gameScreenHeight = GetScreenHeight();
         i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
         m_pGame->gameScreen() = {
-            GetScreenWidth() / 2 - gameScreenWidth / 2,
+            0 /*GetScreenWidth() / 2 - gameScreenWidth / 2*/,
             0,
             gameScreenWidth,
             gameScreenHeight,

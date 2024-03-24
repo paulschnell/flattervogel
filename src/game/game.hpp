@@ -30,8 +30,10 @@ private:
     u64 m_bestScore = 0;
     bool m_paused = FALSE;
 
+    u64 m_numAlive;
     u64 m_generationCounter = 1;
     u64 m_populationSize;
+    Bird* m_pBestBird = nullptr;
     std::vector<Bird> m_birds; // Population
 
     Pipe m_pipe0;

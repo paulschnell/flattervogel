@@ -39,6 +39,8 @@ void Game::onUpdate(f64 deltaTime) {
 
     bool allDead = TRUE;
     for (auto& bird : m_birds) {
+        bool deadBefore = bird.isDead();
+
         bird.move(deltaTime, m_pNearestPipe);
         if (!bird.isDead()) {
             allDead = FALSE;
@@ -46,6 +48,11 @@ void Game::onUpdate(f64 deltaTime) {
 
             if (haveCleared)
                 bird.incrScore();
+
+            if (bird.fitness() > m_pBestBird->fitness())
+                m_pBestBird = &bird;
+        } else if (!deadBefore) {
+            m_numAlive--;
         }
     }
 
@@ -66,15 +73,15 @@ void Game::onRender() {
         Rectangle(m_gameScreen.left, m_gameScreen.top, m_gameScreen.right, m_gameScreen.bottom),
         Vector2(0, 0),
         0.0,
-        WHITE
-        );
+        WHITE);
 
     m_pipe0.draw(m_gameScreen);
     m_pipe1.draw(m_gameScreen);
 
-    for (const auto& bird : m_birds) {
-        bird.draw(m_gameScreen);
+    for (usize i = 1; i < m_populationSize; i++) {
+        m_birds[i].draw(m_gameScreen, FALSE);
     }
+    m_birds[0].draw(m_gameScreen, TRUE);
 
     // Clear left and right side of screen
     DrawRectangle(0, 0, m_gameScreen.left, GetScreenHeight(), RAYWHITE);
@@ -104,6 +111,14 @@ void Game::onRender() {
         m_gameScreen.top + 0.15 * GetScreenHeight() + 0.01 * GetScreenHeight(),
         0.075 * GetScreenHeight(),
         LIGHTGRAY);
+    DrawText(
+        std::format("Alive: {}/{}", m_numAlive, m_populationSize).c_str(),
+        m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
+        m_gameScreen.top + 0.225 * GetScreenHeight() + 0.01 * GetScreenHeight(),
+        0.075 * GetScreenHeight(),
+        LIGHTGRAY);
+
+    m_pBestBird->getBrain().draw(m_gameScreen);
 }
 
 void Game::reset() {
@@ -114,6 +129,8 @@ void Game::reset() {
 
     m_pipe0.randomHoleY();
     m_pipe1.randomHoleY();
+
+    m_numAlive = m_populationSize;
 }
 
 void Game::onInit() {
@@ -129,6 +146,8 @@ void Game::onInit() {
         m_birds.emplace_back();
         m_birds.back().createRandomNeuralNetwork();
     }
+    m_pBestBird = &m_birds[0];
+    m_numAlive = m_populationSize;
 }
 
 void Game::newGeneration() {
@@ -165,4 +184,6 @@ void Game::newGeneration() {
         brain.mutate(0.5, 0.2, rng1);
         m_birds.emplace_back(brain);
     }
+
+    m_pBestBird = &m_birds[0];
 }

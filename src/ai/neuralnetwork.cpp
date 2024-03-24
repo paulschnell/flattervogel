@@ -2,6 +2,8 @@
 
 #include <random>
 #include <iostream>
+#include "raylib.h"
+#include <format>
 
 Neuron::Neuron(u32 numInputs)
     : m_numInputs(numInputs) {
@@ -59,6 +61,29 @@ void Neuron::mutate(f64 weightMaxRange, f64 biasMaxRange, std::mt19937 rng) {
     }
 }
 
+void Neuron::draw(utils::Rect<i32> gameScreen, f64 x, f64 y) const {
+    DrawCircle(
+        gameScreen.left + gameScreen.right + x * gameScreen.right,
+        gameScreen.top + y * gameScreen.bottom,
+        0.025 * gameScreen.right,
+        YELLOW);
+    DrawCircleLines(
+        gameScreen.left + gameScreen.right + x * gameScreen.right,
+        gameScreen.top + y * gameScreen.bottom,
+        0.025 * gameScreen.right,
+        BLACK);
+}
+
+void Neuron::drawText(utils::Rect<i32> gameScreen, f64 x, f64 y) const {
+    DrawText(
+        std::format("{}", (i32) (m_bias * 100)).c_str(),
+        gameScreen.left + gameScreen.right + (x - (m_bias > 0 ? 0.01 : 0.02)) * gameScreen.right,
+        gameScreen.top + (y - 0.0075) * gameScreen.bottom,
+        0.025 * gameScreen.right,
+        BLACK
+    );
+}
+
 Layer::Layer(u32 numNeurons, u32 numInputsPerNeuron)
     : m_numNeurons(numNeurons) {
     for (u32 i = 0; i < m_numNeurons; i++) {
@@ -93,6 +118,41 @@ void Layer::mutate(f64 weightMaxRange, f64 biasMaxRange, std::mt19937 rng) {
     }
 }
 
+void Layer::drawConnections(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const {
+    f64 beforeX = x - 0.15;
+    std::vector<f64> beforeY;
+    beforeY.reserve(m_neurons[0].m_numInputs);
+for (i32 i = 0; i < m_neurons[0].m_numInputs; i++) {
+        beforeY.push_back(middleY - (m_neurons[0].m_numInputs / 2.0 - i) * 0.07 + 0.035);
+    }
+
+    for (i32 i = 0; i < m_numNeurons; i++) {
+        f64 y = middleY - (m_numNeurons / 2.0 - i) * 0.07 + 0.035;
+
+        for (i32 j = 0; j < beforeY.size(); j++) {
+            DrawLineEx(
+                Vector2(gameScreen.left + gameScreen.right + x * gameScreen.right,
+                gameScreen.top + y * gameScreen.bottom),
+                Vector2(gameScreen.left + gameScreen.right + beforeX * gameScreen.right,
+                gameScreen.top + beforeY[j] * gameScreen.bottom),
+                std::abs(m_neurons[i].m_weights[j]) * gameScreen.right * 0.01,
+                m_neurons[i].m_weights[j] > 0 ? RED : BLUE);
+        }
+    }
+}
+
+void Layer::drawNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const {
+    for (i32 i = 0; i < m_numNeurons; i++) {
+        m_neurons[i].draw(gameScreen, x, middleY - (m_numNeurons / 2.0 - i) * 0.07 + 0.035);
+        m_neurons[i].drawText(gameScreen, x, middleY - (m_numNeurons / 2.0 - i) * 0.07 + 0.035);
+    }
+}
+
+void Layer::drawInputNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const {
+    for (i32 i = 0; i < m_neurons[0].m_numInputs; i++)
+        Neuron(0).draw(gameScreen, x, middleY - (m_numNeurons / 2.0 - i + 1) * 0.07 + 0.035);
+}
+
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& parent0, const NeuralNetwork& parent1, std::mt19937 rng) {
     for (usize i = 0; i < parent0.m_layers.size(); i++) {
         m_layers.emplace_back(parent0.m_layers[i], parent1.m_layers[i], rng);
@@ -121,5 +181,32 @@ std::vector<f64> NeuralNetwork::calc(const std::vector<f64>& inputs) {
 void NeuralNetwork::mutate(f64 weightMaxRange, f64 biasMaxRange, std::mt19937 rng) {
     for (auto& layer : m_layers) {
         layer.mutate(weightMaxRange, biasMaxRange, rng);
+    }
+}
+
+void NeuralNetwork::draw(utils::Rect<i32> gameScreen) const {
+    // Calculate middleY
+    u32 mostNodesInLayer = 0;
+    for (const auto& layer : m_layers) {
+        if (layer.m_neurons[0].m_numInputs > mostNodesInLayer)
+            mostNodesInLayer = layer.m_neurons[0].m_numInputs;
+    }
+    f64 middleY = 1.0 - mostNodesInLayer * 0.04;
+
+    {
+        f64 currentX = 0.25;
+        for (u32 i = 0; i < m_layers.size(); i++) {
+            m_layers[i].drawConnections(gameScreen, middleY, currentX);
+            currentX += 0.15;
+        }
+    }
+    {
+        f64 currentX = 0.1;
+        m_layers[0].drawInputNeurons(gameScreen, middleY, currentX);
+        currentX += 0.15;
+        for (const auto& layer : m_layers) {
+            layer.drawNeurons(gameScreen, middleY, currentX);
+            currentX += 0.15;
+        }
     }
 }

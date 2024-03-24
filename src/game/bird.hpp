@@ -26,7 +26,7 @@ public:
     void move(f64 deltaTime, const Pipe* pNearestPipe);
     void jump();
     void freefall(f64 deltaTime);
-    void draw(const utils::Rect<i32>& gameScreen) const;
+    void draw(const utils::Rect<i32>& gameScreen, bool best) const;
     void incrScore() noexcept;
 
     void think(f64 holeY, f64 deltaHole);
@@ -63,6 +63,7 @@ private:
     static bool s_firstInit;
     static Texture2D s_texture;
     static Texture2D s_textureDead;
+    static Texture2D s_textureBest;
 
     // ---------------------------------- AI stuff ----------------------------------
     NeuralNetwork m_brain;

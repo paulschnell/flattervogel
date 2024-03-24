@@ -9,12 +9,14 @@
 bool Bird::s_firstInit = FALSE;
 Texture2D Bird::s_texture;
 Texture2D Bird::s_textureDead;
+Texture2D Bird::s_textureBest;
 
 Bird::Bird() {
     if (!s_firstInit) {
         s_firstInit = TRUE;
         s_texture = LoadTexture("assets/bird.png");
         s_textureDead = LoadTexture("assets/bird_dead.png");
+        s_textureBest = LoadTexture("assets/bird_best.png");
     }
 }
 
@@ -65,9 +67,8 @@ void Bird::freefall(f64 deltaTime) {
     }
 }
 
-void Bird::draw(const utils::Rect<i32>& gameScreen) const {
-
-    const Texture2D& tex = !m_dead ? s_texture : s_textureDead;
+void Bird::draw(const utils::Rect<i32>& gameScreen, bool best) const {
+    const Texture2D& tex = best ? s_textureBest : (!m_dead ? s_texture : s_textureDead);
 //    f64 scale = gameScreen.right * 0.009;
     f64 scale = gameScreen.right / tex.width * RADIUS * 3;
 
