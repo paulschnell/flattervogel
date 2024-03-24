@@ -38,4 +38,7 @@ private:
     Pipe m_pipe1 = Pipe(1.6);
     Pipe* m_pNearestPipe = &m_pipe0;
     u64 m_pipeCounter = 0;
+
+    static bool s_firstInit;
+    static Texture2D s_textureBackground;
 };

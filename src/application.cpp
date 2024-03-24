@@ -24,7 +24,7 @@ void Application::onInit() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
-    m_pGame = new Game(10);
+    m_pGame = new Game(1000);
 
     i32 gameScreenHeight = SCREEN_HEIGHT;
     i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);

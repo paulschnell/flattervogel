@@ -6,11 +6,25 @@
 #include <random>
 #include <iostream>
 
+bool Bird::s_firstInit = FALSE;
+Texture2D Bird::s_texture;
+Texture2D Bird::s_textureDead;
+
+Bird::Bird() {
+    if (!s_firstInit) {
+        s_firstInit = TRUE;
+        s_texture = LoadTexture("assets/bird.png");
+        s_textureDead = LoadTexture("assets/bird_dead.png");
+    }
+}
+
 Bird::Bird(const NeuralNetwork& brain)
     : m_brain(brain) {
 }
 
 void Bird::move(f64 deltaTime, const Pipe* pNearestPipe) {
+    m_speed = speed();
+
     if (m_dead) {
         m_x -= deltaTime * Pipe::SPEED;
         freefall(deltaTime);
@@ -20,10 +34,14 @@ void Bird::move(f64 deltaTime, const Pipe* pNearestPipe) {
     m_lastJump += deltaTime;
     if (m_lastJump > 0.5)
         m_lastJump = 0.5;
-    m_y += speed();
+
+    m_y += m_speed;
+
+    m_rotation = m_speed * -4000;
+    if (m_rotation > 90) m_rotation = 90;
+    if (m_rotation < -90) m_rotation = -90;
 
     if (hasCollided(pNearestPipe)) {
-        m_deadY = m_y;
         m_dead = TRUE;
     } else {
         m_survivedTime += deltaTime;
@@ -36,7 +54,11 @@ void Bird::jump() {
 
 void Bird::freefall(f64 deltaTime) {
     m_lastJump += deltaTime;
-    m_y += speed();
+    m_y += m_speed;
+
+    m_rotation = m_speed * -4000;
+    if (m_rotation > 90) m_rotation = 90;
+    if (m_rotation < -90) m_rotation = -90;
 
     if (m_y < 7.0 * RADIUS / 10.0) {
         m_y = 7.0 * RADIUS / 10.0;
@@ -44,19 +66,34 @@ void Bird::freefall(f64 deltaTime) {
 }
 
 void Bird::draw(const utils::Rect<i32>& gameScreen) const {
-    DrawCircle(
+
+    const Texture2D& tex = !m_dead ? s_texture : s_textureDead;
+//    f64 scale = gameScreen.right * 0.009;
+    f64 scale = gameScreen.right / tex.width * RADIUS * 3;
+
+    DrawTexturePro(
+        tex,
+        Rectangle(0, 0, tex.width, tex.height),
+        Rectangle(gameScreen.left + (m_x) * gameScreen.right,
+            gameScreen.top + (1.0 - (m_y)) * gameScreen.bottom,
+            tex.width * scale, tex.height * scale),
+        Vector2(tex.width * scale / 2.0, tex.height * scale / 2.0),
+        m_rotation,
+        WHITE);
+
+    /*DrawCircle(
         gameScreen.left + m_x * gameScreen.right,
         gameScreen.top + (1.0 - m_y) * gameScreen.bottom,
         RADIUS * gameScreen.right,
-        !m_dead ? YELLOW : GRAY);
+        !m_dead ? YELLOW : GRAY);*/
 }
 
 void Bird::incrScore() noexcept {
     m_score++;
 }
 
-void Bird::think(f64 holeY) {
-    std::vector<f64> input = { m_y, holeY };
+void Bird::think(f64 holeY, f64 deltaHole) {
+    std::vector<f64> input = { m_y, holeY, deltaHole, m_speed };
     f64 out = m_brain.calc(input)[0];
     if (out > 0.5) {
         jump();
@@ -67,7 +104,7 @@ f64 Bird::speed() const {
     // out < 0 -> down
     // out > 0 -> up
 
-    f64 out = -0.1 * (m_lastJump * m_lastJump);
+    f64 out = -0.1 * std::pow(m_lastJump, 2);
     if (m_lastJump < 0.0) {
         out *= -0.5;
     }
@@ -137,14 +174,7 @@ f64 Bird::fitness() const noexcept {
 }
 
 void Bird::createRandomNeuralNetwork() {
-/*    std::random_device dev;
-    std::mt19937 rng(dev());
-
-    std::uniform_real_distribution distNeurons0(1.0, 4.0);
-    std::uniform_real_distribution distNeurons1(2.0, 4.0);
-
-    m_brain.addLayer(std::round(distNeurons0(rng)), 2);
-    m_brain.addLayer(std::round(distNeurons1(rng)));*/
-    m_brain.addLayer(1, 2);
+    m_brain.addLayer(3, 4);
+    m_brain.addLayer(1);
 }
 // ---------------------------------- AI stuff ----------------------------------

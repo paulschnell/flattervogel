@@ -4,6 +4,9 @@
 #include <format>
 #include <random>
 
+bool Game::s_firstInit = FALSE;
+Texture2D Game::s_textureBackground;
+
 Game::Game(u64 populationSize)
     : m_gameScreen({}), m_populationSize(populationSize) {
     onInit();
@@ -39,7 +42,7 @@ void Game::onUpdate(f64 deltaTime) {
         bird.move(deltaTime, m_pNearestPipe);
         if (!bird.isDead()) {
             allDead = FALSE;
-            bird.think(m_pNearestPipe->getHoleY());
+            bird.think(m_pNearestPipe->getHoleY(), m_pNearestPipe->getLeftX() - Bird::X_OFFSET);
 
             if (haveCleared)
                 bird.incrScore();
@@ -57,6 +60,14 @@ void Game::onUpdate(f64 deltaTime) {
 
 void Game::onRender() {
     DrawRectangle(m_gameScreen.left, m_gameScreen.top, m_gameScreen.right, m_gameScreen.bottom, BLUE);
+    DrawTexturePro(
+        s_textureBackground,
+        Rectangle(0, 0, s_textureBackground.width, s_textureBackground.height),
+        Rectangle(m_gameScreen.left, m_gameScreen.top, m_gameScreen.right, m_gameScreen.bottom),
+        Vector2(0, 0),
+        0.0,
+        WHITE
+        );
 
     m_pipe0.draw(m_gameScreen);
     m_pipe1.draw(m_gameScreen);
@@ -82,7 +93,7 @@ void Game::onRender() {
         0.075 * GetScreenHeight(),
         LIGHTGRAY);
     DrawText(
-        std::format("Best Score: {}", m_bestScore).c_str(),
+        std::format("Best: {}", m_bestScore).c_str(),
         m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
         m_gameScreen.top + 0.075 * GetScreenHeight() + 0.01 * GetScreenHeight(),
         0.075 * GetScreenHeight(),
@@ -106,6 +117,11 @@ void Game::reset() {
 }
 
 void Game::onInit() {
+    if (!s_firstInit) {
+        s_firstInit = TRUE;
+        s_textureBackground = LoadTexture("assets/background.png");
+    }
+
     m_pipe0.randomHoleY();
     m_pipe1.randomHoleY();
 
@@ -139,8 +155,8 @@ void Game::newGeneration() {
     m_birds.clear();
 
     // Parents and child are pushed to next generation
-    m_birds.emplace_back(bird0);
-    m_birds.emplace_back(bird1);
+    m_birds.emplace_back(bird0.getBrain());
+    m_birds.emplace_back(bird1.getBrain());
     m_birds.emplace_back(nn);
 
     for (usize i = 3; i < m_populationSize; i++) {
