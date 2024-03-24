@@ -53,16 +53,29 @@ endif ()
 
 # Compiler
 if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    # Windows Subsystem -> WinMain Entry-Point
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE PS_TOOLSET_MSVC)
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME})
 
 elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    if (WIN32)
+        # Windows Subsystem
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--subsystem,windows")
+    endif ()
+
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE PS_TOOLSET_CLANG)
 
     # Copy compile_commands.json to ${CMAKE_SOURCE_DIR}
     add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json ${CMAKE_SOURCE_DIR})
 
 elseif (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    if (WIN32)
+        # Windows Subsystem
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows")
+    endif ()
+
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE PS_TOOLSET_GNU)
 
 endif ()

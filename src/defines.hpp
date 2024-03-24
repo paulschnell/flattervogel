@@ -81,9 +81,3 @@ typedef char TCHAR;
 #define DEBUG_BREAK
 
 #endif
-
-// Functions
-#ifndef M_PI
-#define M_PI = 3.1415
-#endif
-#define DEG_TO_RAD(x) (x * M_PI / 180)

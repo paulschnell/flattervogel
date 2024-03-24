@@ -8,8 +8,6 @@
 class Pipe;
 
 class Bird {
-    friend class Brain;
-
 private:
     struct Vec {
         f64 x;

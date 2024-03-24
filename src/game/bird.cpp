@@ -174,7 +174,7 @@ f64 Bird::fitness() const noexcept {
 }
 
 void Bird::createRandomNeuralNetwork() {
-    m_brain.addLayer(3, 4);
+    m_brain.addLayer(2, 4);
     m_brain.addLayer(1);
 }
 // ---------------------------------- AI stuff ----------------------------------
