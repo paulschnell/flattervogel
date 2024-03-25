@@ -8,6 +8,17 @@
 class Pipe;
 
 class Bird {
+    friend class Game;
+
+public:
+    enum class Type {
+        NORMAL = 0,
+        DEAD = 1,
+        LAST_BEST = 2,
+        BEST = 3,
+        SINGLE = 4,
+    };
+
 private:
     struct Vec {
         f64 x;
@@ -26,8 +37,9 @@ public:
     void move(f64 deltaTime, const Pipe* pNearestPipe);
     void jump();
     void freefall(f64 deltaTime);
-    void draw(const utils::Rect<i32>& gameScreen, bool best) const;
+    void draw(const utils::Rect<i32>& gameScreen, Type type) const;
     void incrScore() noexcept;
+    void reset();
 
     void think(f64 holeY, f64 deltaHole);
 
@@ -38,9 +50,9 @@ public:
     inline f64 getSpeed() const noexcept { return m_speed; }
 
 private:
-    f64 speed() const;
     bool hasCollided(const Pipe* pNearestPipe);
     static bool circleRectCollision(Vec circlePos, f64 circleR, Vec rectPos, Vec rectDim);
+    void fall(f64 deltaTime);
 
     // ---------------------------------- AI stuff ----------------------------------
 public:
@@ -51,8 +63,11 @@ public:
     // ---------------------------------- AI stuff ----------------------------------
 
 private:
+    static constexpr const f64 ACCELERATION = -0.05;
+    static constexpr const f64 JUMP_STRENGTH = 0.016;
+    static constexpr const f64 MAX_SPEED = 1.5;
+
     f64 m_y = 0.5; // 0.0 < birdY < 1.0
-    f64 m_lastJump = 0.0;
     f64 m_speed = 0.0;
 
     f64 m_x = X_OFFSET;
@@ -64,6 +79,8 @@ private:
     static Texture2D s_texture;
     static Texture2D s_textureDead;
     static Texture2D s_textureBest;
+    static Texture2D s_textureLastBest;
+    static Texture2D s_textureSingle;
 
     // ---------------------------------- AI stuff ----------------------------------
     NeuralNetwork m_brain;

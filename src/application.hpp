@@ -24,5 +24,5 @@ private:
 private:
     bool m_isRunning = TRUE;
 
-    Game* m_pGame = NULL;
+    Game* m_pGame = nullptr;
 };

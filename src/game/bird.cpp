@@ -4,12 +4,13 @@
 #include "pipe.hpp"
 #include <cmath>
 #include <random>
-#include <iostream>
 
 bool Bird::s_firstInit = FALSE;
 Texture2D Bird::s_texture;
 Texture2D Bird::s_textureDead;
 Texture2D Bird::s_textureBest;
+Texture2D Bird::s_textureLastBest;
+Texture2D Bird::s_textureSingle;
 
 Bird::Bird() {
     if (!s_firstInit) {
@@ -17,6 +18,8 @@ Bird::Bird() {
         s_texture = LoadTexture("assets/bird.png");
         s_textureDead = LoadTexture("assets/bird_dead.png");
         s_textureBest = LoadTexture("assets/bird_best.png");
+        s_textureLastBest = LoadTexture("assets/bird_lastbest.png");
+        s_textureSingle = LoadTexture("assets/bird_single.png");
     }
 }
 
@@ -25,23 +28,19 @@ Bird::Bird(const NeuralNetwork& brain)
 }
 
 void Bird::move(f64 deltaTime, const Pipe* pNearestPipe) {
-    m_speed = speed();
-
     if (m_dead) {
         m_x -= deltaTime * Pipe::SPEED;
         freefall(deltaTime);
         return;
     }
 
-    m_lastJump += deltaTime;
-    if (m_lastJump > 0.5)
-        m_lastJump = 0.5;
-
-    m_y += m_speed;
+    fall(deltaTime);
 
     m_rotation = m_speed * -4000;
-    if (m_rotation > 90) m_rotation = 90;
-    if (m_rotation < -90) m_rotation = -90;
+    if (m_rotation > 90)
+        m_rotation = 90;
+    if (m_rotation < -90)
+        m_rotation = -90;
 
     if (hasCollided(pNearestPipe)) {
         m_dead = TRUE;
@@ -51,34 +50,54 @@ void Bird::move(f64 deltaTime, const Pipe* pNearestPipe) {
 }
 
 void Bird::jump() {
-    m_lastJump = -0.5;
+    m_speed = JUMP_STRENGTH;
 }
 
 void Bird::freefall(f64 deltaTime) {
-    m_lastJump += deltaTime;
-    m_y += m_speed;
+    fall(deltaTime);
 
     m_rotation = m_speed * -4000;
-    if (m_rotation > 90) m_rotation = 90;
-    if (m_rotation < -90) m_rotation = -90;
+    if (m_rotation > 90)
+        m_rotation = 90;
+    if (m_rotation < -90)
+        m_rotation = -90;
 
     if (m_y < 7.0 * RADIUS / 10.0) {
         m_y = 7.0 * RADIUS / 10.0;
     }
 }
 
-void Bird::draw(const utils::Rect<i32>& gameScreen, bool best) const {
-    const Texture2D& tex = best ? s_textureBest : (!m_dead ? s_texture : s_textureDead);
-//    f64 scale = gameScreen.right * 0.009;
-    f64 scale = gameScreen.right / tex.width * RADIUS * 3;
+void Bird::draw(const utils::Rect<i32>& gameScreen, Type type) const {
+    if (m_dead)
+        type = Type::DEAD;
+
+    Texture2D* pTex;
+    switch (type) {
+    case Type::NORMAL:
+        pTex = &s_texture;
+        break;
+    case Type::DEAD:
+        pTex = &s_textureDead;
+        break;
+    case Type::LAST_BEST:
+        pTex = &s_textureLastBest;
+        break;
+    case Type::BEST:
+        pTex = &s_textureBest;
+        break;
+    case Type::SINGLE:
+        pTex = &s_textureSingle;
+        break;
+    }
+    f64 scale = gameScreen.right / pTex->width * RADIUS * 3;
 
     DrawTexturePro(
-        tex,
-        Rectangle(0, 0, tex.width, tex.height),
-        Rectangle(gameScreen.left + (m_x) * gameScreen.right,
-            gameScreen.top + (1.0 - (m_y)) * gameScreen.bottom,
-            tex.width * scale, tex.height * scale),
-        Vector2(tex.width * scale / 2.0, tex.height * scale / 2.0),
+        *pTex,
+        Rectangle(0, 0, pTex->width, pTex->height),
+        Rectangle(gameScreen.left + (m_x) *gameScreen.right,
+            gameScreen.top + (1.0 - (m_y + 0.008)) * gameScreen.bottom,
+            pTex->width * scale, pTex->height * scale),
+        Vector2(pTex->width * scale / 2.0, pTex->height * scale / 2.0),
         m_rotation,
         WHITE);
 
@@ -93,23 +112,21 @@ void Bird::incrScore() noexcept {
     m_score++;
 }
 
+void Bird::reset() {
+    m_y = 0.5;
+    m_speed = 0.0;
+    m_x = X_OFFSET;
+    m_score = 0;
+    m_dead = FALSE;
+    m_rotation = 0.0;
+}
+
 void Bird::think(f64 holeY, f64 deltaHole) {
     std::vector<f64> input = { m_y, holeY, deltaHole, m_speed };
     f64 out = m_brain.calc(input)[0];
     if (out > 0.5) {
         jump();
     }
-}
-
-f64 Bird::speed() const {
-    // out < 0 -> down
-    // out > 0 -> up
-
-    f64 out = -0.1 * std::pow(m_lastJump, 2);
-    if (m_lastJump < 0.0) {
-        out *= -0.5;
-    }
-    return out;
 }
 
 bool Bird::hasCollided(const Pipe* pNearestPipe) {
@@ -167,6 +184,13 @@ bool Bird::circleRectCollision(Vec circlePos, f64 circleR, Vec rectPos, Vec rect
 
     // 0.01 for "smoother user experience"
     return dist + 0.01 < circleR;
+}
+
+void Bird::fall(f64 deltaTime) {
+    m_speed += ACCELERATION * deltaTime;
+    if (std::abs(m_speed) > MAX_SPEED * deltaTime)
+        m_speed = MAX_SPEED * (m_speed > 0 ? 1.0 : -1.0) * deltaTime;
+    m_y += m_speed;
 }
 
 // ---------------------------------- AI stuff ----------------------------------

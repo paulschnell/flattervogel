@@ -13,12 +13,12 @@ public:
         }
     }
 
-    explicit Vector(T* data) {
+    Vector(T* data) {
         memcpy(m_data, data, N * sizeof(T));
     }
 
     template<typename... Args>
-    explicit Vector(Args... args) {
+    Vector(Args... args) {
         m_data = { static_cast<T>(args)... };
         static_assert(sizeof...(args) == N, "Incorrent  number of arguments provided.");
     }

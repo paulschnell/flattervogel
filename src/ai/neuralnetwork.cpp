@@ -1,7 +1,6 @@
 #include "neuralnetwork.hpp"
 
 #include <random>
-#include <iostream>
 #include "raylib.h"
 #include <format>
 
@@ -80,8 +79,7 @@ void Neuron::drawText(utils::Rect<i32> gameScreen, f64 x, f64 y) const {
         gameScreen.left + gameScreen.right + (x - (m_bias > 0 ? 0.01 : 0.02)) * gameScreen.right,
         gameScreen.top + (y - 0.0075) * gameScreen.bottom,
         0.025 * gameScreen.right,
-        BLACK
-    );
+        BLACK);
 }
 
 Layer::Layer(u32 numNeurons, u32 numInputsPerNeuron)
@@ -122,7 +120,7 @@ void Layer::drawConnections(utils::Rect<i32> gameScreen, f64 middleY, f64 x) con
     f64 beforeX = x - 0.15;
     std::vector<f64> beforeY;
     beforeY.reserve(m_neurons[0].m_numInputs);
-for (i32 i = 0; i < m_neurons[0].m_numInputs; i++) {
+    for (i32 i = 0; i < m_neurons[0].m_numInputs; i++) {
         beforeY.push_back(middleY - (m_neurons[0].m_numInputs / 2.0 - i) * 0.07 + 0.035);
     }
 
@@ -132,9 +130,9 @@ for (i32 i = 0; i < m_neurons[0].m_numInputs; i++) {
         for (i32 j = 0; j < beforeY.size(); j++) {
             DrawLineEx(
                 Vector2(gameScreen.left + gameScreen.right + x * gameScreen.right,
-                gameScreen.top + y * gameScreen.bottom),
+                    gameScreen.top + y * gameScreen.bottom),
                 Vector2(gameScreen.left + gameScreen.right + beforeX * gameScreen.right,
-                gameScreen.top + beforeY[j] * gameScreen.bottom),
+                    gameScreen.top + beforeY[j] * gameScreen.bottom),
                 std::abs(m_neurons[i].m_weights[j]) * gameScreen.right * 0.01,
                 m_neurons[i].m_weights[j] > 0 ? RED : BLUE);
         }

@@ -15,6 +15,9 @@ public:
     void onUpdate(f64 deltaTime);
     void onRender();
     void reset();
+    void backToFront();
+
+    bool togglePlayerPlaying();
 
     inline utils::Rect<i32>& gameScreen() noexcept { return m_gameScreen; }
 
@@ -28,7 +31,9 @@ private:
 private:
     utils::Rect<i32> m_gameScreen;
     u64 m_bestScore = 0;
-    bool m_paused = FALSE;
+
+    bool m_playerPlaying = FALSE;
+    Bird m_playerBird;
 
     u64 m_numAlive;
     u64 m_generationCounter = 1;

@@ -18,12 +18,10 @@ Game::Game(utils::Rect<i32> gameScreen, u64 populationSize)
 }
 
 void Game::onUpdate(f64 deltaTime) {
-    if (m_paused) {
-        for (auto& bird : m_birds) {
-            bird.freefall(deltaTime);
-        }
-        return;
-    }
+    Vector2 mousePos = GetMousePosition();
+    bool mouseInsideGameScreen =
+        mousePos.x > m_gameScreen.left && mousePos.x < m_gameScreen.left + m_gameScreen.right &&
+        mousePos.y > m_gameScreen.top && mousePos.y < m_gameScreen.top + m_gameScreen.bottom;
 
     bool haveCleared = FALSE;
     // switch to nearest pipe (if last ist cleared)
@@ -37,32 +35,61 @@ void Game::onUpdate(f64 deltaTime) {
         m_pipeCounter++;
     }
 
-    bool allDead = TRUE;
-    for (auto& bird : m_birds) {
-        bool deadBefore = bird.isDead();
-
-        bird.move(deltaTime, m_pNearestPipe);
-        if (!bird.isDead()) {
-            allDead = FALSE;
-            bird.think(m_pNearestPipe->getHoleY(), m_pNearestPipe->getLeftX() - Bird::X_OFFSET);
+    if (m_playerPlaying) {
+        if (!m_playerBird.isDead()) {
+            if (IsKeyPressed(KEY_SPACE) || (mouseInsideGameScreen && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+                m_playerBird.jump();
+            }
 
             if (haveCleared)
-                bird.incrScore();
+                m_playerBird.incrScore();
+        } else {
+            if (m_playerBird.getScore() > m_bestScore)
+                m_bestScore = m_playerBird.getScore();
 
-            if (bird.fitness() > m_pBestBird->fitness())
-                m_pBestBird = &bird;
-        } else if (!deadBefore) {
-            m_numAlive--;
+            if (IsKeyPressed(KEY_SPACE) || (mouseInsideGameScreen && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+                m_playerBird.reset();
+                backToFront();
+            }
+        }
+
+        if (m_playerBird.isDead())
+            m_playerBird.freefall(deltaTime);
+        else
+            m_playerBird.move(deltaTime, m_pNearestPipe);
+
+    } else {
+        bool allDead = TRUE;
+        for (u64 i = 0; i < m_populationSize; i++) {
+            auto& bird = m_birds[i];
+
+            bool deadBefore = bird.isDead();
+
+            bird.move(deltaTime, m_pNearestPipe);
+            if (!bird.isDead()) {
+                allDead = FALSE;
+                bird.think(m_pNearestPipe->getHoleY(), m_pNearestPipe->getLeftX() - Bird::X_OFFSET);
+
+                if (haveCleared)
+                    bird.incrScore();
+
+                if (bird.fitness() > m_pBestBird->fitness())
+                    m_pBestBird = &bird;
+            } else if (!deadBefore) {
+                m_numAlive--;
+            }
+        }
+
+        if (allDead) {
+            newGeneration();
+            backToFront();
         }
     }
 
-    if (allDead) {
-        reset();
-        newGeneration();
+    if (!m_playerBird.isDead()) {
+        m_pipe0.move(deltaTime);
+        m_pipe1.move(deltaTime);
     }
-
-    m_pipe0.move(deltaTime);
-    m_pipe1.move(deltaTime);
 }
 
 void Game::onRender() {
@@ -78,10 +105,15 @@ void Game::onRender() {
     m_pipe0.draw(m_gameScreen);
     m_pipe1.draw(m_gameScreen);
 
-    for (usize i = 1; i < m_populationSize; i++) {
-        m_birds[i].draw(m_gameScreen, FALSE);
+    if (m_playerPlaying) {
+        m_playerBird.draw(gameScreen(), Bird::Type::SINGLE);
+    } else {
+        for (usize i = 1; i < m_populationSize; i++) {
+            m_birds[i].draw(m_gameScreen, Bird::Type::NORMAL);
+        }
+        m_pBestBird->draw(m_gameScreen, Bird::Type::BEST);
+        m_birds[0].draw(m_gameScreen, Bird::Type::LAST_BEST);
     }
-    m_birds[0].draw(m_gameScreen, TRUE);
 
     // Clear left and right side of screen
     DrawRectangle(0, 0, m_gameScreen.left, GetScreenHeight(), RAYWHITE);
@@ -94,7 +126,7 @@ void Game::onRender() {
 
     // Draw Info
     DrawText(
-        std::format("Pipe: {}", m_pipeCounter).c_str(),
+        m_playerPlaying ? std::format("Score: {}", m_playerBird.getScore()).c_str() : std::format("Pipe: {}", m_pipeCounter).c_str(),
         m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
         m_gameScreen.top + 0.01 * GetScreenWidth(),
         0.075 * GetScreenHeight(),
@@ -105,32 +137,50 @@ void Game::onRender() {
         m_gameScreen.top + 0.075 * GetScreenHeight() + 0.01 * GetScreenHeight(),
         0.075 * GetScreenHeight(),
         LIGHTGRAY);
-    DrawText(
-        std::format("Gen: {}", m_generationCounter).c_str(),
-        m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
-        m_gameScreen.top + 0.15 * GetScreenHeight() + 0.01 * GetScreenHeight(),
-        0.075 * GetScreenHeight(),
-        LIGHTGRAY);
-    DrawText(
-        std::format("Alive: {}/{}", m_numAlive, m_populationSize).c_str(),
-        m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
-        m_gameScreen.top + 0.225 * GetScreenHeight() + 0.01 * GetScreenHeight(),
-        0.075 * GetScreenHeight(),
-        LIGHTGRAY);
+    if (!m_playerPlaying) {
+        DrawText(
+            std::format("Gen: {}", m_generationCounter).c_str(),
+            m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
+            m_gameScreen.top + 0.15 * GetScreenHeight() + 0.01 * GetScreenHeight(),
+            0.075 * GetScreenHeight(),
+            LIGHTGRAY);
+        DrawText(
+            std::format("Alive: {}/{}", m_numAlive, m_populationSize).c_str(),
+            m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
+            m_gameScreen.top + 0.225 * GetScreenHeight() + 0.01 * GetScreenHeight(),
+            0.075 * GetScreenHeight(),
+            LIGHTGRAY);
 
-    m_pBestBird->getBrain().draw(m_gameScreen);
+        m_pBestBird->getBrain().draw(m_gameScreen);
+    }
 }
 
 void Game::reset() {
+    backToFront();
+
+    m_playerBird.reset();
+    m_birds.clear();
+    m_numAlive = 0;
+    m_generationCounter = 1;
+    m_pBestBird = nullptr;
+
+    onInit();
+}
+
+void Game::backToFront() {
     m_pipe0 = Pipe();
     m_pipe1 = Pipe(1.6);
     m_pNearestPipe = &m_pipe0;
     m_pipeCounter = 0;
-
     m_pipe0.randomHoleY();
     m_pipe1.randomHoleY();
+}
 
-    m_numAlive = m_populationSize;
+bool Game::togglePlayerPlaying() {
+    reset();
+
+    m_playerPlaying = !m_playerPlaying;
+    return m_playerPlaying;
 }
 
 void Game::onInit() {
@@ -142,6 +192,7 @@ void Game::onInit() {
     m_pipe0.randomHoleY();
     m_pipe1.randomHoleY();
 
+    m_birds.reserve(m_populationSize);
     for (u32 i = 0; i < m_populationSize; i++) {
         m_birds.emplace_back();
         m_birds.back().createRandomNeuralNetwork();
@@ -172,6 +223,7 @@ void Game::newGeneration() {
     NeuralNetwork nn(bird0.getBrain(), bird1.getBrain(), rng);
 
     m_birds.clear();
+    m_birds.reserve(m_populationSize);
 
     // Parents and child are pushed to next generation
     m_birds.emplace_back(bird0.getBrain());
@@ -186,4 +238,5 @@ void Game::newGeneration() {
     }
 
     m_pBestBird = &m_birds[0];
+    m_numAlive = m_populationSize;
 }

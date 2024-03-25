@@ -2,7 +2,6 @@
 
 #include <random>
 #include "raylib.h"
-#include <iostream>
 
 bool Pipe::s_firstInit = FALSE;
 Texture2D Pipe::s_textureSeg;

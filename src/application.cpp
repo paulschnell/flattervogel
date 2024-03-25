@@ -24,7 +24,7 @@ void Application::onInit() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
-    m_pGame = new Game(10000);
+    m_pGame = new Game(1000);
 
     i32 gameScreenHeight = SCREEN_HEIGHT;
     i32 gameScreenWidth = (i32) (GAME_ASPECT_RATIO * gameScreenHeight);
@@ -51,8 +51,11 @@ void Application::onUpdate(f64 deltaTime) {
         };
     }
 
-    if (IsKeyPressed(KEY_SPACE)) {
-
+    if (IsKeyPressed(KEY_P)) {
+        m_pGame->togglePlayerPlaying();
+    }
+    if (IsKeyPressed(KEY_BACKSPACE)) {
+        m_pGame->reset();
     }
 
     // Draw

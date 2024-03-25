@@ -6,9 +6,9 @@
 
 class Pipe {
 public:
-    static constexpr const f64 SPEED = 0.3; // 0.25
+    static constexpr const f64 SPEED = 0.4;
     static constexpr const f64 WIDTH = 0.2; // 0.0 < WIDTH < 1.0
-    static constexpr const f64 HOLE_HEIGHT = 0.25; // 0.0 < HOLE_HEIGHT < 1.0
+    static constexpr const f64 HOLE_HEIGHT = 0.3; // 0.0 < HOLE_HEIGHT < 1.0
     static constexpr const f64 MIN_PIPE_HEIGHT = 0.2; // 0.0 < MIN_PIPE_HEIGHT < 1.0
 
 public:
