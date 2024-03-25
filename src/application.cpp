@@ -24,6 +24,10 @@ void Application::onInit() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
+    Image icon = LoadImage("assets/bird_single.png");
+    SetWindowIcon(icon);
+    UnloadImage(icon);
+
     m_pGame = new Game(1000);
 
     i32 gameScreenHeight = SCREEN_HEIGHT;

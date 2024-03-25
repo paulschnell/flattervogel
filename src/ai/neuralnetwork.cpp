@@ -41,7 +41,7 @@ f64 Neuron::activate(const std::vector<f64>& inputs) const {
         sum += inputs[i] * m_weights[i];
     }
 
-    return activationFunctions::binStep(sum);
+    return activationFunctions::sigimoid(sum);
 }
 void Neuron::mutate(f64 weightMaxRange, f64 biasMaxRange, std::mt19937 rng) {
     std::uniform_real_distribution<f64> dist0(0.0, 1.0);
