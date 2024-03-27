@@ -20,7 +20,7 @@ i32 Application::run() noexcept {
 }
 
 void Application::onInit() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    // SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "flattervogel");
     SetTargetFPS(60);
 
@@ -61,13 +61,6 @@ void Application::onUpdate(f64 deltaTime) {
         };
     }
 
-    if (IsKeyPressed(KEY_P)) {
-        m_pGame->togglePlayerPlaying();
-    }
-    if (IsKeyPressed(KEY_BACKSPACE)) {
-        m_pGame->reset();
-    }
-
     m_buttonHandler.onUpdate(GetMousePosition().x, GetMousePosition().y, IsMouseButtonDown(MOUSE_BUTTON_LEFT), this);
 
     // Draw
@@ -76,9 +69,11 @@ void Application::onUpdate(f64 deltaTime) {
     ClearBackground(DARKGRAY);
 
     m_pGame->onRender();
-    m_buttonHandler.onRender();
+
     DrawText("Next Pop. Size:", 10, (u32) GetScreenHeight() - 65 - 50, 45, LIGHTGRAY);
     DrawText(std::format("({})", m_pGame->getPopulationSize()).c_str(), 130, (u32) GetScreenHeight() - 65, 45, LIGHTGRAY);
+
+    m_buttonHandler.onRender();
 
     EndDrawing();
 
