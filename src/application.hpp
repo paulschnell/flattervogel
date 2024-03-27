@@ -2,6 +2,7 @@
 
 #include "defines.hpp"
 #include "game/game.hpp"
+#include "ui/button_handler.hpp"
 
 constexpr const i32 SCREEN_WIDTH = 750 * 16 / 9;
 constexpr const i32 SCREEN_HEIGHT = 750;
@@ -21,8 +22,14 @@ private:
     void onUpdate(f64 deltaTime);
     void onDestroy();
 
+    static void buttonReset(ui::Button& button, Application* pApplication);
+    static void buttonNewGen(ui::Button& button, Application* pApplication);
+    static void buttonTogglePlayer(ui::Button& button, Application* pApplication);
+    static void buttonCyclePopulationSize(ui::Button& button, Application* pApplication);
+
 private:
     bool m_isRunning = TRUE;
 
     Game* m_pGame = nullptr;
+    ui::ButtonHandler m_buttonHandler;
 };

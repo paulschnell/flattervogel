@@ -20,6 +20,9 @@ public:
     bool togglePlayerPlaying();
 
     inline utils::Rect<i32>& gameScreen() noexcept { return m_gameScreen; }
+    inline bool isPlayerPlaying() const noexcept { return m_playerPlaying; }
+    inline u64 getPopulationSize() const noexcept { return m_populationSize; }
+    inline u64& nextPopulationSize() noexcept { return m_nextPopulationSize; }
 
     // ---------------------------------- AI stuff ----------------------------------
     void newGeneration();
@@ -38,6 +41,7 @@ private:
     u64 m_numAlive;
     u64 m_generationCounter = 1;
     u64 m_populationSize;
+    u64 m_nextPopulationSize;
     Bird* m_pBestBird = nullptr;
     std::vector<Bird> m_birds; // Population
 

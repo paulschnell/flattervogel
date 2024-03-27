@@ -8,7 +8,7 @@ bool Game::s_firstInit = FALSE;
 Texture2D Game::s_textureBackground;
 
 Game::Game(u64 populationSize)
-    : m_gameScreen({}), m_populationSize(populationSize) {
+    : m_gameScreen({}), m_populationSize(populationSize), m_nextPopulationSize(populationSize) {
     onInit();
 }
 
@@ -60,9 +60,7 @@ void Game::onUpdate(f64 deltaTime) {
 
     } else {
         bool allDead = TRUE;
-        for (u64 i = 0; i < m_populationSize; i++) {
-            auto& bird = m_birds[i];
-
+        for (auto& bird : m_birds) {
             bool deadBefore = bird.isDead();
 
             bird.move(deltaTime, m_pNearestPipe);
@@ -145,7 +143,7 @@ void Game::onRender() {
             0.075 * GetScreenHeight(),
             LIGHTGRAY);
         DrawText(
-            std::format("Alive: {}/{}", m_numAlive, m_populationSize).c_str(),
+            std::format("Alive: {}", m_numAlive).c_str(),
             m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
             m_gameScreen.top + 0.225 * GetScreenHeight() + 0.01 * GetScreenHeight(),
             0.075 * GetScreenHeight(),
@@ -222,6 +220,7 @@ void Game::newGeneration() {
     std::mt19937 rng(dev());
     NeuralNetwork nn(bird0.getBrain(), bird1.getBrain(), rng);
 
+    m_populationSize = m_nextPopulationSize;
     m_birds.clear();
     m_birds.reserve(m_populationSize);
 
