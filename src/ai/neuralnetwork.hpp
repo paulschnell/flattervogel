@@ -1,11 +1,11 @@
 #pragma once
 
 #include "defines.hpp"
+#include "utils/rect.hpp"
 #include <vector>
 #include <cmath>
-#include <tuple>
 #include <random>
-#include "utils/rect.hpp"
+#include <string>
 
 namespace activationFunctions {
 
@@ -41,6 +41,8 @@ private:
     void draw(utils::Rect<i32> gameScreen, f64 x, f64 y) const;
     void drawText(utils::Rect<i32> gameScreen, f64 x, f64 y) const;
 
+    std::string serialize() const;
+
 private:
     u32 m_numInputs = 0;
     std::vector<f64> m_weights;
@@ -66,6 +68,8 @@ private:
     void drawNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const;
     void drawInputNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const;
 
+    std::string serialize() const;
+
 private:
     u32 m_numNeurons = 0;
     std::vector<Neuron> m_neurons;
@@ -74,6 +78,7 @@ private:
 class NeuralNetwork {
 public:
     NeuralNetwork() = default;
+    NeuralNetwork(std::string_view file);
     NeuralNetwork(const NeuralNetwork& parent0, const NeuralNetwork& parent1, std::mt19937 rng); // crossover
     ~NeuralNetwork() = default;
 
@@ -85,6 +90,7 @@ public:
     void mutate(f64 weightMaxRange, f64 biasRange, std::mt19937 rng);
 
     void draw(utils::Rect<i32> gameScreen) const;
+    void serialize(std::string_view file) const;
 
 private:
     std::vector<Layer> m_layers;

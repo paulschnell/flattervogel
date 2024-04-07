@@ -1,8 +1,12 @@
 #include "neuralnetwork.hpp"
 
-#include <random>
 #include "raylib.h"
+#include "nlohmann/json.hpp"
+#include <random>
 #include <format>
+#include <fstream>
+#include <exception>
+#include <iostream>
 
 Neuron::Neuron(u32 numInputs)
     : m_numInputs(numInputs) {
@@ -148,7 +152,30 @@ void Layer::drawNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const {
 
 void Layer::drawInputNeurons(utils::Rect<i32> gameScreen, f64 middleY, f64 x) const {
     for (i32 i = 0; i < m_neurons[0].m_numInputs; i++)
-        Neuron(0).draw(gameScreen, x, middleY - (m_numNeurons / 2.0 - i + 1) * 0.07 + 0.035);
+        Neuron(0).draw(gameScreen, x, middleY - (m_neurons[0].m_numInputs / 2.0 - i) * 0.07 + 0.035);
+}
+
+NeuralNetwork::NeuralNetwork(std::string_view file) {
+    std::ifstream ifs(file.data());
+    if (ifs.bad()) {
+        std::cout << "Could not find file (" << file.data() << ")." << std::endl;
+        throw std::exception();
+    }
+
+    nlohmann::json obj;
+    ifs >> obj;
+
+    for (int i = 0; i < obj["data"].size(); i++) {
+        std::vector<Neuron> neurons;
+        for (int j = 0; j < obj["data"][i].size(); j++) {
+            std::vector<f64> weights;
+            for (int k = 0; k < obj["data"][i][j]["weights"].size(); k++) {
+                weights.emplace_back(obj["data"][i][j]["weights"][k]);
+            }
+            neurons.emplace_back(weights, obj["data"][i][j]["bias"]);
+        }
+        m_layers.emplace_back(neurons);
+    }
 }
 
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& parent0, const NeuralNetwork& parent1, std::mt19937 rng) {
@@ -207,4 +234,31 @@ void NeuralNetwork::draw(utils::Rect<i32> gameScreen) const {
             currentX += 0.15;
         }
     }
+}
+
+void NeuralNetwork::serialize(std::string_view file) const {
+    nlohmann::json obj;
+
+    for (const auto& layer : m_layers) {
+        nlohmann::json layerObj = nlohmann::json::array();
+
+        for (const auto& neuron : layer.m_neurons) {
+            nlohmann::json neuronObj = {
+                { "bias", neuron.m_bias },
+                { "weights", nlohmann::json::array() }
+            };
+
+            for (const auto& weight : neuron.m_weights) {
+                neuronObj["weights"].push_back(weight);
+            }
+
+            layerObj.push_back(neuronObj);
+        }
+
+        obj["data"].push_back(layerObj);
+    }
+
+    std::ofstream ofs(file.data());
+    ofs << obj.dump(3);
+    ofs.close();
 }

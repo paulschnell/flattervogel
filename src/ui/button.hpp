@@ -10,13 +10,13 @@ class Button;
 } // namespace ui
 class Application;
 
-typedef void (*fnOnHover)(ui::Button&, Application*);
-typedef void (*fnOnPress)(ui::Button&, Application*);
-
 namespace ui {
 
 class Button {
 public:
+    typedef void (*fnOnHover)(ui::Button&, Application*);
+    typedef void (*fnOnPress)(ui::Button&, Application*);
+
     enum class State {
         UP,
         DOWN,

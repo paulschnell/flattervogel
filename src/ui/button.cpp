@@ -2,7 +2,7 @@
 
 #include "raylib.h"
 
-namespace ui {
+using namespace ui;
 
 Button::Button(utils::Rect<u32> rect, std::string_view text, fnOnPress fnOnPress, fnOnHover fnOnHover)
     : m_rect(rect), m_text(text), m_fnOnPress(fnOnPress), m_fnOnHover(fnOnHover) {}
@@ -50,8 +50,7 @@ void Button::onUpdate(u32 mouseX, u32 mouseY, bool mouseDown, Application *pAppl
         m_state = State::UP;
     }
 }
+
 bool Button::inside(u32 x, u32 y) const noexcept {
     return x >= m_rect.left && x <= m_rect.left + m_rect.right && y <= m_rect.top + m_rect.bottom && y >= m_rect.top;
 }
-
-} // namespace ui

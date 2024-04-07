@@ -1,7 +1,7 @@
 #include "pipe.hpp"
 
-#include <random>
 #include "raylib.h"
+#include <random>
 
 bool Pipe::s_firstInit = FALSE;
 Texture2D Pipe::s_textureSeg;

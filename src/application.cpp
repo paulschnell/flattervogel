@@ -1,7 +1,7 @@
 #include "application.hpp"
 
-#include <chrono>
 #include "raylib.h"
+#include <chrono>
 
 i32 Application::run() noexcept {
     onInit();
@@ -39,11 +39,20 @@ void Application::onInit() {
         gameScreenHeight,
     };
 
-    m_buttonHandler.addButton({ 10, 10, 130, 45 }, "Reset", buttonReset);
-    m_buttonHandler.addButton({ 10, 10 + 50, 170, 45 }, "New Gen", buttonNewGen);
-    m_buttonHandler.addButton({ 10, 10 + 100, 280, 45 }, "Play Yourself", buttonTogglePlayer);
+    m_uiHandler.addButton({ 10, 10, 130, 45 }, "Reset", buttonReset);
+    m_uiHandler.addButton({ 10, 10 + 50, 170, 45 }, "New Gen", buttonNewGen);
+    m_uiHandler.addButton({ 10, 10 + 100, 280, 45 }, "Play Computer", buttonCycleMode);
 
-    m_buttonHandler.addButton({ 10, (u32) GetScreenHeight() - 65, 110, 45 }, "1000", buttonCyclePopulationSize);
+    m_uiHandler.addButton({ 10, (u32) GetScreenHeight() - 65, 110, 45 }, "1000", buttonCyclePopulationSize);
+
+    m_uiHandler.addButton({ 10, 10 + 250, 230, 45 }, "Save Model", buttonSaveBestBirdToFile);
+
+    ui::Dropdown dropdown({ 10, 10 + 200, 250, 45 }, dropdownPresets);
+    dropdown.addElement("Empty", dropdownEmpty);
+    for (const auto& ele : m_pGame->models()) {
+        dropdown.addElement(ele);
+    }
+    m_uiHandler.addDropdown(dropdown);
 }
 
 void Application::onUpdate(f64 deltaTime) {
@@ -61,7 +70,7 @@ void Application::onUpdate(f64 deltaTime) {
         };
     }
 
-    m_buttonHandler.onUpdate(GetMousePosition().x, GetMousePosition().y, IsMouseButtonDown(MOUSE_BUTTON_LEFT), this);
+    m_uiHandler.onUpdate(GetMousePosition().x, GetMousePosition().y, IsMouseButtonDown(MOUSE_BUTTON_LEFT), IsMouseButtonReleased(MOUSE_BUTTON_LEFT), this);
 
     // Draw
     BeginDrawing();
@@ -72,8 +81,9 @@ void Application::onUpdate(f64 deltaTime) {
 
     DrawText("Next Pop. Size:", 10, (u32) GetScreenHeight() - 65 - 50, 45, LIGHTGRAY);
     DrawText(std::format("({})", m_pGame->getPopulationSize()).c_str(), 130, (u32) GetScreenHeight() - 65, 45, LIGHTGRAY);
+    DrawText("Load Model:", 10, (u32) 160, 45, LIGHTGRAY);
 
-    m_buttonHandler.onRender();
+    m_uiHandler.onRender();
 
     EndDrawing();
 
@@ -95,12 +105,18 @@ void Application::buttonNewGen(ui::Button& button, Application* pApplication) {
     pApplication->m_pGame->newGeneration();
 }
 
-void Application::buttonTogglePlayer(ui::Button& button, Application* pApplication) {
-    pApplication->m_pGame->togglePlayerPlaying();
-    if (pApplication->m_pGame->isPlayerPlaying())
-        button.setText("Play Computer");
-    else
+void Application::buttonCycleMode(ui::Button& button, Application* pApplication) {
+    switch (pApplication->m_pGame->cycleCurrentMode()) {
+    case Game::Mode::MANUAL:
         button.setText("Play Yourself");
+        break;
+    case Game::Mode::TRAINING:
+        button.setText("Train Model");
+        break;
+    case Game::Mode::DISPLAY:
+        button.setText("Play Computer");
+        break;
+    }
 }
 
 void Application::buttonCyclePopulationSize(ui::Button& button, Application* pApplication) {
@@ -112,4 +128,15 @@ void Application::buttonCyclePopulationSize(ui::Button& button, Application* pAp
     pApplication->m_pGame->nextPopulationSize() = current;
 
     button.setText(std::format("{}", current));
+}
+
+void Application::buttonSaveBestBirdToFile(ui::Button& button, Application* pApplication) {
+    pApplication->m_pGame->saveBestBirdToFile(pApplication->m_uiHandler.getDropdown(0));
+}
+
+void Application::dropdownPresets(ui::Dropdown::Element& newSelected, ui::Dropdown& dropdown, Application* pApplication) {
+    pApplication->m_pGame->setBrain(dropdown.getSelected());
+}
+
+void Application::dropdownEmpty(ui::Dropdown& dropdown, Application* pApplication) {
 }

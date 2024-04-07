@@ -41,8 +41,6 @@ public:
     void incrScore() noexcept;
     void reset();
 
-    void think(f64 holeY, f64 deltaHole);
-
     inline f64 getY() const noexcept { return m_y; }
     inline f64 getX() const noexcept { return m_x; }
     inline bool isDead() const noexcept { return m_dead; }
@@ -56,7 +54,9 @@ private:
 
     // ---------------------------------- AI stuff ----------------------------------
 public:
+    void think(f64 holeY, f64 deltaHole);
     void createRandomNeuralNetwork();
+    void getBrainFromFile(std::string_view file);
     f64 fitness() const noexcept;
 
     inline const NeuralNetwork& getBrain() const noexcept { return m_brain; }

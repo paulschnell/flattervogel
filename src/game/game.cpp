@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include <format>
 #include <random>
+#include <filesystem>
 
 bool Game::s_firstInit = FALSE;
 Texture2D Game::s_textureBackground;
@@ -35,28 +36,31 @@ void Game::onUpdate(f64 deltaTime) {
         m_pipeCounter++;
     }
 
-    if (m_playerPlaying) {
-        if (!m_playerBird.isDead()) {
-            if (IsKeyPressed(KEY_SPACE) || (mouseInsideGameScreen && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
-                m_playerBird.jump();
+    if (m_mode != Mode::TRAINING) {
+        if (!m_singleBird.isDead()) {
+            if (m_mode == Mode::MANUAL) {
+                if (IsKeyPressed(KEY_SPACE) || (mouseInsideGameScreen && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+                    m_singleBird.jump();
+                }
+            } else {
+                m_singleBird.think(m_pNearestPipe->getHoleY(), m_pNearestPipe->getLeftX() - Bird::X_OFFSET);
             }
 
             if (haveCleared)
-                m_playerBird.incrScore();
+                m_singleBird.incrScore();
+
+            m_singleBird.move(deltaTime, m_pNearestPipe);
         } else {
-            if (m_playerBird.getScore() > m_bestScore)
-                m_bestScore = m_playerBird.getScore();
+            if (m_singleBird.getScore() > m_bestScore)
+                m_bestScore = m_singleBird.getScore();
 
             if (IsKeyPressed(KEY_SPACE) || (mouseInsideGameScreen && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
-                m_playerBird.reset();
+                m_singleBird.reset();
                 backToFront();
             }
-        }
 
-        if (m_playerBird.isDead())
-            m_playerBird.freefall(deltaTime);
-        else
-            m_playerBird.move(deltaTime, m_pNearestPipe);
+            m_singleBird.freefall(deltaTime);
+        }
 
     } else {
         bool allDead = TRUE;
@@ -84,7 +88,7 @@ void Game::onUpdate(f64 deltaTime) {
         }
     }
 
-    if (!m_playerBird.isDead()) {
+    if (!m_singleBird.isDead()) {
         m_pipe0.move(deltaTime);
         m_pipe1.move(deltaTime);
     }
@@ -103,14 +107,14 @@ void Game::onRender() {
     m_pipe0.draw(m_gameScreen);
     m_pipe1.draw(m_gameScreen);
 
-    if (m_playerPlaying) {
-        m_playerBird.draw(gameScreen(), Bird::Type::SINGLE);
-    } else {
+    if (m_mode == Mode::TRAINING) {
         for (usize i = 1; i < m_populationSize; i++) {
             m_birds[i].draw(m_gameScreen, Bird::Type::NORMAL);
         }
         m_pBestBird->draw(m_gameScreen, Bird::Type::BEST);
         m_birds[0].draw(m_gameScreen, Bird::Type::LAST_BEST);
+    } else {
+        m_singleBird.draw(gameScreen(), Bird::Type::SINGLE);
     }
 
     // Clear left and right side of screen
@@ -124,7 +128,7 @@ void Game::onRender() {
 
     // Draw Info
     DrawText(
-        m_playerPlaying ? std::format("Score: {}", m_playerBird.getScore()).c_str() : std::format("Pipe: {}", m_pipeCounter).c_str(),
+        m_mode != Mode::TRAINING ? std::format("Score: {}", m_singleBird.getScore()).c_str() : std::format("Pipe: {}", m_pipeCounter).c_str(),
         m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
         m_gameScreen.top + 0.01 * GetScreenWidth(),
         0.075 * GetScreenHeight(),
@@ -135,7 +139,7 @@ void Game::onRender() {
         m_gameScreen.top + 0.075 * GetScreenHeight() + 0.01 * GetScreenHeight(),
         0.075 * GetScreenHeight(),
         LIGHTGRAY);
-    if (!m_playerPlaying) {
+    if (m_mode == Mode::TRAINING) {
         DrawText(
             std::format("Gen: {}", m_generationCounter).c_str(),
             m_gameScreen.left + m_gameScreen.right + 0.01 * GetScreenWidth(),
@@ -148,21 +152,45 @@ void Game::onRender() {
             m_gameScreen.top + 0.225 * GetScreenHeight() + 0.01 * GetScreenHeight(),
             0.075 * GetScreenHeight(),
             LIGHTGRAY);
-
+    }
+    if (m_mode == Mode::TRAINING) {
         m_pBestBird->getBrain().draw(m_gameScreen);
+    } else if (m_mode == Mode::DISPLAY) {
+        m_singleBird.getBrain().draw(m_gameScreen);
     }
 }
 
 void Game::reset() {
     backToFront();
 
-    m_playerBird.reset();
+    m_singleBird.reset();
     m_birds.clear();
     m_numAlive = 0;
     m_generationCounter = 1;
     m_pBestBird = nullptr;
 
-    onInit();
+    m_pipe0.randomHoleY();
+    m_pipe1.randomHoleY();
+
+    if (m_mode == Mode::TRAINING) {
+        std::random_device dev;
+        std::mt19937 rng(dev());
+
+        m_birds.reserve(m_populationSize);
+        m_birds.emplace_back(m_singleBird.getBrain());
+        for (u32 i = 1; i < m_populationSize; i++) {
+            if (m_id != -1) {
+                NeuralNetwork brain = m_singleBird.getBrain();
+                brain.mutate(0.5, 0.2, rng);
+                m_birds.emplace_back(brain);
+            } else {
+                m_birds.emplace_back();
+                m_birds.back().createRandomNeuralNetwork();
+            }
+        }
+        m_pBestBird = &m_birds[0];
+        m_numAlive = m_populationSize;
+    }
 }
 
 void Game::backToFront() {
@@ -174,29 +202,64 @@ void Game::backToFront() {
     m_pipe1.randomHoleY();
 }
 
-bool Game::togglePlayerPlaying() {
-    reset();
+Game::Mode Game::cycleCurrentMode() {
+    switch (m_mode) {
+    case Mode::MANUAL:
+        m_mode = Mode::TRAINING;
+        break;
+    case Mode::TRAINING:
+        m_mode = Mode::DISPLAY;
 
-    m_playerPlaying = !m_playerPlaying;
-    return m_playerPlaying;
+        m_singleBird = Bird(m_pBestBird->getBrain());
+        break;
+    case Mode::DISPLAY:
+        m_mode = Mode::MANUAL;
+        break;
+    }
+
+    reset();
+    return m_mode;
+}
+
+void Game::saveBestBirdToFile(ui::Dropdown& dropdown) {
+    Bird& bird = m_mode == Mode::TRAINING ? *m_pBestBird : m_singleBird;
+    bird.getBrain().serialize(std::format("presets/{}.json", m_id != -1 ? m_models[m_id] : "New Model"));
+    if (m_id == -1) {
+        m_models.push_back("New Model");
+        dropdown.addElement("New Model");
+    }
+}
+
+void Game::setBrain(i32 id) {
+    m_id = id - 1;
+
+    if (m_id == -1) {
+        m_singleBird.createRandomNeuralNetwork();
+    } else {
+        m_singleBird.getBrainFromFile(std::format("presets/{}.json", m_models[m_id]).c_str());
+    }
+    reset();
 }
 
 void Game::onInit() {
     if (!s_firstInit) {
         s_firstInit = TRUE;
         s_textureBackground = LoadTexture("assets/background.png");
+
+        // find every model in presets/*.json
+        for (const auto& entry : std::filesystem::directory_iterator("presets")) {
+            if (entry.is_regular_file() && entry.path().extension() == ".json" && entry.path().stem().string() != "sample") {
+                m_models.emplace_back(entry.path().stem().string());
+            }
+        }
     }
 
     m_pipe0.randomHoleY();
     m_pipe1.randomHoleY();
 
-    m_birds.reserve(m_populationSize);
-    for (u32 i = 0; i < m_populationSize; i++) {
-        m_birds.emplace_back();
-        m_birds.back().createRandomNeuralNetwork();
-    }
-    m_pBestBird = &m_birds[0];
     m_numAlive = m_populationSize;
+
+    setBrain(0);
 }
 
 void Game::newGeneration() {

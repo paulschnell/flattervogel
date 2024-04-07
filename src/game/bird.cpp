@@ -3,7 +3,6 @@
 #include "raylib.h"
 #include "pipe.hpp"
 #include <cmath>
-#include <random>
 
 bool Bird::s_firstInit = FALSE;
 Texture2D Bird::s_texture;
@@ -89,7 +88,7 @@ void Bird::draw(const utils::Rect<i32>& gameScreen, Type type) const {
         pTex = &s_textureSingle;
         break;
     }
-    f64 scale = gameScreen.right / pTex->width * RADIUS * 3;
+    f64 scale = (f32) gameScreen.right / pTex->width * RADIUS * 3;
 
     DrawTexturePro(
         *pTex,
@@ -119,14 +118,6 @@ void Bird::reset() {
     m_score = 0;
     m_dead = FALSE;
     m_rotation = 0.0;
-}
-
-void Bird::think(f64 holeY, f64 deltaHole) {
-    std::vector<f64> input = { m_y, holeY, deltaHole, m_speed };
-    f64 out = m_brain.calc(input)[0];
-    if (out > 0.5) {
-        jump();
-    }
 }
 
 bool Bird::hasCollided(const Pipe* pNearestPipe) {
@@ -194,12 +185,34 @@ void Bird::fall(f64 deltaTime) {
 }
 
 // ---------------------------------- AI stuff ----------------------------------
-f64 Bird::fitness() const noexcept {
-    return (f64) (m_survivedTime);
+void Bird::think(f64 holeY, f64 deltaHole) {
+    std::vector<f64> input = { m_y, holeY, deltaHole, m_speed };
+    f64 out = m_brain.calc(input)[0];
+    if (out > 0.5) {
+        jump();
+    }
 }
 
 void Bird::createRandomNeuralNetwork() {
+    m_brain = NeuralNetwork();
+    // medium
     m_brain.addLayer(2, 4);
     m_brain.addLayer(1);
+
+    // small
+    // m_brain.addLayer(1, 4);
+
+    // large
+    // m_brain.addLayer(4, 4);
+    // m_brain.addLayer(2);
+    // m_brain.addLayer(1);
+}
+
+void Bird::getBrainFromFile(std::string_view file) {
+    m_brain = NeuralNetwork(file);
+}
+
+f64 Bird::fitness() const noexcept {
+    return (f64) (m_survivedTime);
 }
 // ---------------------------------- AI stuff ----------------------------------

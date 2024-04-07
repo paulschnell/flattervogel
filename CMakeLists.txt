@@ -16,6 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 file(GLOB_RECURSE SOURCE_FILES "src/*.hpp" "src/*.cpp")
 
 add_subdirectory("lib/raylib/")
+add_subdirectory("lib/nlohmann_json/")
 
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCE_FILES})
 
@@ -28,10 +29,12 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         "src/"
         "lib/raylib/src/"
+        "lib/nlohmann_json/include/"
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         raylib
+        nlohmann_json
 )
 
 # Systems
